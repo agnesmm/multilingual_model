@@ -9,6 +9,7 @@ import torch.optim as optim
 
 from data_loader import AmazonReviewLoader
 from multilingual_embeddings import MultiLingualEmbeddings
+from plot_scores import AccLossPlot
 from trainer import Trainer
 
 
@@ -83,18 +84,21 @@ class NeuralNetwork(Trainer):
 
 
     def train_model(self, train_loader, test_loader, model, loss = nn.MSELoss(),
-                    optimizer=optim.SGD, optim_param={}):
+                    optimizer=optim.SGD, optim_param={}, model_name='CNN'):
+
+        train_plot = AccLossPlot(num=1, title='%s train'%model_name)
+        test_plot = AccLossPlot(num=2, title='%s test'%model_name)
+
         print('train model')
 
         torch.manual_seed(SEED)
         random.seed(SEED)
 
-        train_loss, val_loss, train_acc, val_acc = [], [], [], []
+        train_loss, val_loss, train_acc, val_acc = [], [1, 1], [], [1, 1]
 
         self.model = model(self.max_len, self.nout)
         self.loss = loss
         self.opt = optimizer(self.model.parameters(), **optim_param)
-
 
         for epoch_n in range(self.n_epochs):
             for batch_idx, (x, y) in enumerate(train_loader):
@@ -108,38 +112,28 @@ class NeuralNetwork(Trainer):
                 if batch_idx%10==0:
                     print('Batch %d : loss = %.3f and accuracy = %.3f'%(batch_idx, loss_t, acc_t))
 
+
+                train_plot.update(loss_t, acc_t)
+
+
             epoch_val_loss, epoch_val_acc = [], []
-            for x_val, y_val in test_loader:
+            for val_batch_idx, (x_val, y_val) in enumerate(test_loader):
                 with torch.no_grad():
                     x_val = self.embeddings(x_val)
                     loss_v, acc_v = self.validation(x_val.double(), y_val.double())
                     epoch_val_loss.append(loss_v)
                     epoch_val_acc.append(acc_v)
+
+                test_plot.update(loss_v, acc_v)
+
             val_loss.append(np.mean(epoch_val_loss))
             val_acc.append(np.mean(epoch_val_acc))
             print('Epoch %d. Val loss = %.3f. Val accuracy = %.3f'%(epoch_n,
                                                                     np.mean(epoch_val_loss),
                                                                     np.mean(epoch_val_acc)))
 
-        plt.figure(figsize=(10, 8))
-        plt.plot(train_loss, color='blue', alpha=.6)
-        plt.title('Train loss')
-        plt.show()
-
-        plt.figure(figsize=(10, 8))
-        plt.plot(train_acc, color='red', alpha=.6)
-        plt.title('Train acc')
-        plt.show()
-
-        plt.figure(figsize=(10, 8))
-        plt.plot(val_loss, color='blue', alpha=.6)
-        plt.title('Validation loss')
-        plt.show()
-
-        plt.figure(figsize=(10, 8))
-        plt.plot(val_acc, color='red', alpha=.6)
-        plt.title('Validation acc')
-        plt.show()
+        train_plot.update(loss_t, acc_t, save=True)
+        test_plot.update(loss_v, acc_v, save=True)
 
 if __name__ == '__main__':
     baseline = NeuralNetwork(n_epochs=30)
@@ -148,7 +142,8 @@ if __name__ == '__main__':
     baseline.train_model(train_loader, test_loader,
                          ConvNetwork,
                          optimizer=optim.Adam,
-                         optim_param={'lr' : 10e-3})
+                         optim_param={'lr' : 10e-3},
+                         model_name='CNN')
 
     # baseline.train_model(train_loader, test_loader,
     #                      RNN,

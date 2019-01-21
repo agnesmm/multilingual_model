@@ -104,7 +104,9 @@ class AmazonReviewLoader(dataLoader):
 
 if __name__ == '__main__':
 
-    data_loader = AmazonReviewLoader(language='fr', multilingual_embeddings=False)
-    train_loader = data_loader.get_dataset('train')
-    test_loader = data_loader.get_dataset('test')
+    fr_data_loader = AmazonReviewLoader(language='fr', multilingual_embeddings=False)
+    de_data_loader = AmazonReviewLoader(language='de', multilingual_embeddings=False)
+
+    train_loader = fr_data_loader.get_dataset('train')
+    test_loader = de_data_loader.get_dataset('train')
 

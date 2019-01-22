@@ -136,16 +136,17 @@ class NeuralNetwork(Trainer):
         test_plot.update(loss_v, acc_v, save=True)
 
 if __name__ == '__main__':
-    baseline = NeuralNetwork(n_epochs=30)
+    baseline = NeuralNetwork(n_epochs=15)
     train_loader, test_loader = baseline.load_data()
 
+    # baseline.train_model(train_loader, test_loader,
+    #                      ConvNetwork,
+    #                      optimizer=optim.Adam,
+    #                      optim_param={'lr' : 10e-3},
+    #                      model_name='CNN')
+
     baseline.train_model(train_loader, test_loader,
-                         ConvNetwork,
+                         RNN,
                          optimizer=optim.Adam,
                          optim_param={'lr' : 10e-3},
-                         model_name='CNN')
-
-    # baseline.train_model(train_loader, test_loader,
-    #                      RNN,
-    #                      optimizer=optim.Adam,
-    #                      optim_param={'lr' : 10e-3})
+                         model_name='LSTM')

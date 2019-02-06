@@ -70,7 +70,7 @@ class AmazonReviewLoaderByLanguage(dataLoader):
         #     elem.clear()
 
         for i, items in enumerate(root):
-            if limit is not None and i > limit:
+            if limit is not None and i >= limit:
                 break
             if items.find('text').text is None:
                 continue
@@ -141,7 +141,7 @@ class AmazonReviewLoader(object):
             print('LOADING LANGUAGE %s'%(l))
             dataloader = AmazonReviewLoaderByLanguage(language=l)
             labeled_corpus[l] = dataloader.get_dataloader(part='train', batch_size=self.batch_size)
-            # unlabeled_corpus[l] = dataloader.get_dataloader(part='unlabeled', batch_size=self.batch_size)
+            unlabeled_corpus[l] = dataloader.get_dataloader(part='unlabeled', batch_size=self.batch_size)
             embeddings_dicts[l] = dataloader.embeddings_dict
             if l==self.target_language:
                 test = dataloader.get_dataloader(part='test', batch_size=self.batch_size)

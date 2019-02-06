@@ -126,7 +126,7 @@ class Model(Trainer):
         test_plot.update(loss_test, acc_test, save=True)
 
 if __name__ == '__main__':
-    source_languages = ['fr', 'de'] #, 'de', 'jp'
+    source_languages = ['fr', 'jp'] #, 'de', 'jp'
     target_language = 'de'
 
 

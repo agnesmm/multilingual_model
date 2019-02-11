@@ -44,12 +44,13 @@ class dataLoader(object):
 
 class AmazonReviewLoaderByLanguage(dataLoader):
     def __init__(self, language = 'fr', datadir='data/cls-acl10-unprocessed',
-                 multilingual_embeddings=True):
+                 multilingual_embeddings=True, xml_limit_size=None):
         super(AmazonReviewLoaderByLanguage, self).__init__()
         self.datadir = datadir
         self.language = language
         self.review_max_len = 200
         self.embeddings_dict = self.load_embeddings_dict(multilingual_embeddings)
+        self.xml_limit_size = xml_limit_size
 
     def load_embeddings_dict(self, multilingual_embeddings):
         mll = MultiLingualEmbeddings()
@@ -58,7 +59,7 @@ class AmazonReviewLoaderByLanguage(dataLoader):
             mll.project_dictionary(self.language, embeddings_dict)
         return embeddings_dict
 
-    def read_xml_file(self, part='train', domain='books', limit=10): #todo limit
+    def read_xml_file(self, part='train', domain='books'):
         filename = path.join(self.datadir, self.language, domain, part+'.review')
         reviews, y = [], []
 
@@ -70,7 +71,7 @@ class AmazonReviewLoaderByLanguage(dataLoader):
         #     elem.clear()
 
         for i, items in enumerate(root):
-            if limit is not None and i >= limit:
+            if self.xml_limit_size is not None and i >= self.xml_limit_size:
                 break
             if items.find('text').text is None:
                 continue
@@ -125,21 +126,25 @@ class AmazonReviewLoaderByLanguage(dataLoader):
         y = torch.Tensor([y_i for y_i in y if y_i is not None]).type(torch.long)
         y = y.unsqueeze(1)
         dataset = torch.utils.data.TensorDataset(X, y)
-        return torch.utils.data.DataLoader(dataset, batch_size=batch_size)
+        shuffle=True
+        if part=='test':
+            shuffle=False
+        return torch.utils.data.DataLoader(dataset, batch_size=batch_size,shuffle=shuffle)
 
 class AmazonReviewLoader(object):
-    def __init__(self, source_languages, target_language, batch_size=32):
+    def __init__(self, source_languages, target_language, batch_size=32, xml_limit_size=None):
         self.batch_size = batch_size
         self.source_languages = source_languages
         self.target_language = target_language
         self.languages = source_languages + [target_language]
+        self.xml_limit_size = xml_limit_size
 
     @timeit
     def load_corpus(self):
         labeled_corpus, unlabeled_corpus, embeddings_dicts = {}, {}, {}
         for l in self.languages:
             print('LOADING LANGUAGE %s'%(l))
-            dataloader = AmazonReviewLoaderByLanguage(language=l)
+            dataloader = AmazonReviewLoaderByLanguage(language=l, xml_limit_size=self.xml_limit_size)
             labeled_corpus[l] = dataloader.get_dataloader(part='train', batch_size=self.batch_size)
             unlabeled_corpus[l] = dataloader.get_dataloader(part='unlabeled', batch_size=self.batch_size)
             embeddings_dicts[l] = dataloader.embeddings_dict
@@ -156,7 +161,8 @@ if __name__ == '__main__':
 
     loader = AmazonReviewLoader(batch_size=32,
                                 source_languages=source_languages,
-                                target_language=target_language)
+                                target_language=target_language,
+                                xml_limit_size=100)
 
     labeled_corpus, unlabeled_corpus, test, embeddings_dicts = loader.load_corpus()
 

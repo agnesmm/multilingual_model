@@ -80,7 +80,7 @@ class Model(Trainer):
         embeddings = torch.Tensor(embeddings).type(torch.float)
         return nn.Embedding.from_pretrained(embeddings)
 
-    def train(self, labeled_corpus, test, embeddings_dicts, model,
+    def train_model(self, labeled_corpus, test, embeddings_dicts, model,
                     loss = nn.MSELoss(),
                     optimizer=optim.SGD, optim_param={},
                     model_name='CNN'):
@@ -126,21 +126,22 @@ class Model(Trainer):
         test_plot.update(loss_test, acc_test, save=True)
 
 if __name__ == '__main__':
-    source_languages = ['fr', 'jp'] #, 'de', 'jp'
-    target_language = 'de'
+    source_languages = ['fr', 'de'] #, 'de', 'jp'
+    target_language = 'en'
 
 
     loader = AmazonReviewLoader(batch_size=32,
                                 source_languages=source_languages,
-                                target_language=target_language)
+                                target_language=target_language,
+                                xml_limit_size=None)
 
     labeled_corpus, unlabeled_corpus, test, embeddings_dicts = loader.load_corpus()
 
-    model = Model(n_epochs=100,
+    model = Model(n_epochs=10000,
                           source_languages=source_languages,
                           target_language=target_language)
 
-    model.train(labeled_corpus, test, embeddings_dicts,
+    model.train_model(labeled_corpus, test, embeddings_dicts,
                 RNN,
                 optimizer=optim.Adam,
                 optim_param={'lr' : 10e-3},
